@@ -1,0 +1,79 @@
+<Window x:Class="EMGFeedbackSystem.Views.AnalysisWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="离线数据分析"
+        Width="980"
+        Height="620"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="离线数据分析"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#1F2937"
+                   HorizontalAlignment="Left"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,12">
+            <TextBox x:Name="SearchTextBox"
+                     Width="360"
+                     Height="32"
+                     Margin="0,0,10,0"
+                     Padding="8,4"
+                     FontSize="14"/>
+            <Button Content="搜索"
+                    Width="80"
+                    Height="32"
+                    Margin="0,0,10,0"
+                    Background="#2563EB"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Click="SearchButton_Click"/>
+            <Button Content="显示全部"
+                    Width="90"
+                    Height="32"
+                    Background="#6B7280"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Click="ShowAllButton_Click"/>
+        </StackPanel>
+
+        <DataGrid Grid.Row="2"
+                  x:Name="SubjectsDataGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  Background="White"
+                  GridLinesVisibility="Horizontal"
+                  BorderBrush="#E5E7EB">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="自动名称" Binding="{Binding DisplayName}" Width="160"/>
+                <DataGridTextColumn Header="编号" Binding="{Binding SubjectId}" Width="120"/>
+                <DataGridTextColumn Header="姓名" Binding="{Binding Name}" Width="120"/>
+                <DataGridTextColumn Header="性别" Binding="{Binding Gender}" Width="80"/>
+                <DataGridTextColumn Header="年龄" Binding="{Binding Age}" Width="80"/>
+                <DataGridTextColumn Header="上限基准" Binding="{Binding UpperLimit, StringFormat=F2}" Width="100"/>
+                <DataGridTextColumn Header="左腿侧别" Binding="{Binding LeftLegSide}" Width="90"/>
+                <DataGridTextColumn Header="右腿侧别" Binding="{Binding RightLegSide}" Width="90"/>
+                <DataGridTextColumn Header="左腿A最大值" Binding="{Binding LeftLegMaxA, StringFormat=F3}" Width="110"/>
+                <DataGridTextColumn Header="右腿A最大值" Binding="{Binding RightLegMaxA, StringFormat=F3}" Width="110"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="关闭"
+                    Width="90"
+                    Height="32"
+                    Background="#9CA3AF"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Click="CloseButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
