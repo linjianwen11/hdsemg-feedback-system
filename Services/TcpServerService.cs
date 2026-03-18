@@ -1,5 +1,6 @@
 using EMGFeedbackSystem.Models;
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -21,13 +22,14 @@ namespace EMGFeedbackSystem.Services
         private NetworkStream? _stream;
         private CancellationTokenSource? _cts;
         private readonly object _lockObj = new object();
+        private bool _loggedFirstSamplePacket;
 
         public event EventHandler<bool>? ConnectionStatusChanged;
         public event EventHandler<EMGData>? DataReceived;
         public event EventHandler<string>? LogMessage;
 
         public bool IsConnected => _client?.Connected ?? false;
-        public string ServerIp { get; set; } = "192.168.4.2";
+        public string ServerIp { get; set; } = "0.0.0.0";
         public int ServerPort { get; set; } = 1234;
 
         public async Task StartServerAsync()
@@ -40,19 +42,19 @@ namespace EMGFeedbackSystem.Services
                 _listener = new TcpListener(ipAddress, ServerPort);
                 _listener.Start();
 
-                LogMessage?.Invoke(this, $"Server started, waiting for {ServerIp}:{ServerPort}");
+                EmitLog($"Server started, waiting for {ServerIp}:{ServerPort}");
 
                 _client = await _listener.AcceptTcpClientAsync();
                 _stream = _client.GetStream();
 
-                LogMessage?.Invoke(this, "Client connected.");
+                EmitLog("Client connected.");
                 ConnectionStatusChanged?.Invoke(this, true);
 
                 _ = Task.Run(() => ReceiveDataAsync(_cts.Token), _cts.Token);
             }
             catch (Exception ex)
             {
-                LogMessage?.Invoke(this, $"Start server failed: {ex.Message}");
+                EmitLog($"Start server failed: {ex.Message}");
                 throw;
             }
         }
@@ -66,12 +68,12 @@ namespace EMGFeedbackSystem.Services
                 _client?.Close();
                 _listener?.Stop();
 
-                LogMessage?.Invoke(this, "Server stopped.");
+                EmitLog("Server stopped.");
                 ConnectionStatusChanged?.Invoke(this, false);
             }
             catch (Exception ex)
             {
-                LogMessage?.Invoke(this, $"Stop server error: {ex.Message}");
+                EmitLog($"Stop server error: {ex.Message}");
             }
         }
 
@@ -79,6 +81,7 @@ namespace EMGFeedbackSystem.Services
         {
             var buffer = new byte[4096];
             var packetBuffer = new List<byte>();
+            bool loggedFirstRead = false;
 
             try
             {
@@ -88,9 +91,17 @@ namespace EMGFeedbackSystem.Services
 
                     if (bytesRead == 0)
                     {
-                        LogMessage?.Invoke(this, "Client disconnected.");
+                        EmitLog("Client disconnected.");
                         ConnectionStatusChanged?.Invoke(this, false);
                         break;
+                    }
+
+                    if (!loggedFirstRead)
+                    {
+                        loggedFirstRead = true;
+                        int previewLen = Math.Min(bytesRead, 16);
+                        string preview = BitConverter.ToString(buffer, 0, previewLen);
+                        EmitLog($"[FirstRead] bytesRead={bytesRead}, preview={preview}");
                     }
 
                     packetBuffer.AddRange(buffer.Take(bytesRead));
@@ -99,11 +110,11 @@ namespace EMGFeedbackSystem.Services
             }
             catch (OperationCanceledException)
             {
-                LogMessage?.Invoke(this, "Receive canceled.");
+                EmitLog("Receive canceled.");
             }
             catch (Exception ex)
             {
-                LogMessage?.Invoke(this, $"Receive error: {ex.Message}");
+                EmitLog($"Receive error: {ex.Message}");
                 ConnectionStatusChanged?.Invoke(this, false);
             }
         }
@@ -148,13 +159,13 @@ namespace EMGFeedbackSystem.Services
 
                 if (!IsCrcValid(packet) && !AcceptInvalidCrc)
                 {
-                    LogMessage?.Invoke(this, "CRC failed, packet dropped.");
+                    EmitLog("CRC failed, packet dropped.");
                     continue;
                 }
 
                 if (!IsCrcValid(packet) && AcceptInvalidCrc)
                 {
-                    LogMessage?.Invoke(this, "CRC failed, continue in compat mode.");
+                    EmitLog("CRC failed, continue in compat mode.");
                 }
 
                 try
@@ -163,7 +174,7 @@ namespace EMGFeedbackSystem.Services
                 }
                 catch (Exception ex)
                 {
-                    LogMessage?.Invoke(this, $"Parse packet failed: {ex.Message}");
+                    EmitLog($"Parse packet failed: {ex.Message}");
                 }
             }
         }
@@ -202,13 +213,14 @@ namespace EMGFeedbackSystem.Services
 
             if (categoryId == Protocol.Category.SampleData && functionId == Protocol.Function.UploadSample)
             {
+                LogFirstSamplePacket(packet);
                 ParseSampleData(packet);
             }
             else if (categoryId == Protocol.Category.BasicFunction)
             {
                 if (functionId == Protocol.Function.HandshakeAck)
                 {
-                    LogMessage?.Invoke(this, "Handshake ack received.");
+                    EmitLog("Handshake ack received.");
                 }
             }
             else if (categoryId == Protocol.Category.ControlCommand)
@@ -216,12 +228,12 @@ namespace EMGFeedbackSystem.Services
                 if (functionId == Protocol.Function.StartAck)
                 {
                     byte result = packet.Length > 8 ? packet[8] : (byte)0;
-                    LogMessage?.Invoke(this, $"Start ack: {(result == Protocol.Result.Success ? "Success" : "Failure")}");
+                    EmitLog($"Start ack: {(result == Protocol.Result.Success ? "Success" : "Failure")}");
                 }
                 else if (functionId == Protocol.Function.StopAck)
                 {
                     byte result = packet.Length > 8 ? packet[8] : (byte)0;
-                    LogMessage?.Invoke(this, $"Stop ack: {(result == Protocol.Result.Success ? "Success" : "Failure")}");
+                    EmitLog($"Stop ack: {(result == Protocol.Result.Success ? "Success" : "Failure")}");
                 }
             }
         }
@@ -263,6 +275,43 @@ namespace EMGFeedbackSystem.Services
             DataReceived?.Invoke(this, emgData);
         }
 
+        private void LogFirstSamplePacket(byte[] packet)
+        {
+            if (_loggedFirstSamplePacket)
+            {
+                return;
+            }
+
+            _loggedFirstSamplePacket = true;
+
+            int lengthField = packet.Length >= 6 ? ((packet[4] << 8) | packet[5]) : -1;
+            string headerBytes = packet.Length >= 8
+                ? BitConverter.ToString(packet, 0, 8)
+                : BitConverter.ToString(packet);
+
+            int dataOffset = 12;
+            string sampleBytes = packet.Length >= dataOffset + 8
+                ? BitConverter.ToString(packet, dataOffset, 8)
+                : "N/A";
+
+            string absMeanBytes = packet.Length >= dataOffset + 4 + (Protocol.Channels.Total * 4)
+                ? BitConverter.ToString(packet, dataOffset + (Protocol.Channels.Total * 4), 8)
+                : "N/A";
+
+            float leSample = 0f;
+            float beSample = 0f;
+            if (packet.Length >= dataOffset + 4)
+            {
+                leSample = BitConverter.ToSingle(packet, dataOffset);
+                byte[] be = new[] { packet[dataOffset + 3], packet[dataOffset + 2], packet[dataOffset + 1], packet[dataOffset] };
+                beSample = BitConverter.ToSingle(be, 0);
+            }
+
+            EmitLog($"[FirstSample] lenField={lengthField}, packetLen={packet.Length}, header={headerBytes}");
+            EmitLog($"[FirstSample] sampleBytes={sampleBytes}, leFloat={leSample}, beFloat={beSample}");
+            EmitLog($"[FirstSample] absMeanBytes={absMeanBytes}");
+        }
+
         public async Task SendCommandAsync(byte categoryId, byte functionId, byte[]? data = null)
         {
             if (_stream == null || _client?.Connected != true)
@@ -271,6 +320,7 @@ namespace EMGFeedbackSystem.Services
             }
 
             var packet = BuildPacket(categoryId, functionId, data);
+            EmitLog($"[Send] cat=0x{categoryId:X2}, func=0x{functionId:X2}, len={packet.Length}, bytes={BitConverter.ToString(packet)}");
 
             lock (_lockObj)
             {
@@ -336,19 +386,25 @@ namespace EMGFeedbackSystem.Services
         public async Task SendHandshakeAsync()
         {
             await SendCommandAsync(Protocol.Category.BasicFunction, Protocol.Function.Handshake);
-            LogMessage?.Invoke(this, "Sent handshake command.");
+            EmitLog("Sent handshake command.");
         }
 
         public async Task SendStartCollectionAsync()
         {
             await SendCommandAsync(Protocol.Category.ControlCommand, Protocol.Function.StartCollection);
-            LogMessage?.Invoke(this, "Sent start collection command.");
+            EmitLog("Sent start collection command.");
         }
 
         public async Task SendStopCollectionAsync()
         {
             await SendCommandAsync(Protocol.Category.ControlCommand, Protocol.Function.StopCollection);
-            LogMessage?.Invoke(this, "Sent stop collection command.");
+            EmitLog("Sent stop collection command.");
+        }
+
+        private void EmitLog(string message)
+        {
+            LogMessage?.Invoke(this, message);
+            Debug.WriteLine(message);
         }
     }
 }

@@ -43,6 +43,14 @@ namespace EMGFeedbackSystem.Views
             LoadAllSubjects();
         }
 
+        private void BackToWelcome_Click(object sender, RoutedEventArgs e)
+        {
+            var welcomeWindow = new EMGFeedbackSystem.WelcomeWindow();
+            welcomeWindow.Show();
+            Close();
+        }
+
+
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -82,3 +90,5 @@ namespace EMGFeedbackSystem.Views
         }
     }
 }
+
+

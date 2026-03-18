@@ -329,11 +329,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\肌电反馈仪\\interactive_feedback_device\\EMGFeedbackSystem.csproj",
+      "projectUniqueName": "D:\\feddback-system-hdemg\\hdsemg-feedback-system\\EMGFeedbackSystem.csproj",
       "projectName": "EMGFeedbackSystem",
-      "projectPath": "D:\\肌电反馈仪\\interactive_feedback_device\\EMGFeedbackSystem.csproj",
+      "projectPath": "D:\\feddback-system-hdemg\\hdsemg-feedback-system\\EMGFeedbackSystem.csproj",
       "packagesPath": "C:\\Users\\28964\\.nuget\\packages\\",
-      "outputPath": "D:\\肌电反馈仪\\interactive_feedback_device\\obj\\",
+      "outputPath": "D:\\feddback-system-hdemg\\hdsemg-feedback-system\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

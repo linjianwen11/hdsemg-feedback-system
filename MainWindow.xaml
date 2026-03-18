@@ -1,4 +1,4 @@
-<Window x:Class="EMGFeedbackSystem.MainWindow"
+﻿<Window x:Class="EMGFeedbackSystem.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:EMGFeedbackSystem.Converters"
@@ -21,16 +21,28 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- 顶部按钮区域 -->
                 <Border BorderBrush="Black" BorderThickness="0,0,0,1">
-                    <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
-                        <Button Content="连接采集设备" Width="120" Height="35" Margin="10,0" Command="{Binding ConnectCommand}"/>
-                        <Button Content="启动采集" Width="100" Height="35" Margin="10,0" Command="{Binding StartCollectionCommand}"/>
-                        <Button Content="停止采集" Width="100" Height="35" Margin="10,0" Command="{Binding StopCollectionCommand}"/>
-                    </StackPanel>
+                    <Grid Margin="20,5,20,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="连接采集设备" Width="120" Height="35" Margin="10,0" Command="{Binding ConnectCommand}"/>
+                            <Button Content="启动采集" Width="100" Height="35" Margin="10,0" Command="{Binding StartCollectionCommand}"/>
+                            <Button Content="停止采集" Width="100" Height="35" Margin="10,0" Command="{Binding StopCollectionCommand}"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Content="返回主界面"
+                                Width="120"
+                                Height="35"
+                                Margin="10,0,0,0"
+                                Click="BackToWelcome_Click"/>
+                    </Grid>
                 </Border>
 
-                <!-- 主体区域 -->
                 <Grid Grid.Row="1">
 
                     <Grid.ColumnDefinitions>
@@ -39,7 +51,6 @@
                         <ColumnDefinition Width="2.4*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左侧按钮菜单 -->
                     <Border BorderBrush="Black" BorderThickness="0,0,1,0">
                         <UniformGrid Columns="1" Rows="10" Margin="10">
 
@@ -62,7 +73,7 @@
                                 <TextBlock Text="{Binding SelectedLegPosition, Converter={StaticResource NullOrEmptyToDefaultConverter}, ConverterParameter='电极粘贴部位'}"/>
                             </Button>
                             <Button Click="LegSideButton_Click">
-                                <TextBlock Text="{Binding SelectedLegSide, Converter={StaticResource NullOrEmptyToDefaultConverter}, ConverterParameter='该腿为(健侧/患侧)'}"/>
+                                <TextBlock Text="{Binding SelectedLegSide, Converter={StaticResource NullOrEmptyToDefaultConverter}, ConverterParameter='该腿侧别(健侧/患侧)'}"/>
                             </Button>
                             <Button Click="UpperLimitButton_Click">
                                 <TextBlock Text="{Binding UpperLimitText, Converter={StaticResource NullOrEmptyToDefaultConverter}, ConverterParameter='设置上限基准'}"/>
@@ -73,7 +84,6 @@
                         </UniformGrid>
                     </Border>
 
-                    <!-- 中间热力图区域 -->
                     <Border Grid.Column="1" BorderBrush="Black" BorderThickness="0,0,1,0">
                         <Grid Margin="10">
                             <Grid.RowDefinitions>
@@ -81,13 +91,11 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <!-- 左右腿选择 -->
                             <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
                                 <RadioButton Content="左腿" IsChecked="{Binding IsLeftLegSelected}" Margin="20,5"/>
                                 <RadioButton Content="右腿" IsChecked="{Binding IsRightLegSelected}" Margin="20,5"/>
                             </StackPanel>
 
-                            <!-- 三个热力图（7x3网格）+ 进度条 + 数值 -->
                             <Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -95,7 +103,6 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- A电极 -->
                                 <StackPanel Grid.Column="0" HorizontalAlignment="Center" Margin="15">
                                     <TextBlock Text="A电极" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
                                     <Border BorderBrush="Black" BorderThickness="1" Width="90" Height="210" Margin="5">
@@ -121,7 +128,6 @@
                                     <TextBlock Text="{Binding TextBlockValueA}" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
                                 </StackPanel>
 
-                                <!-- B电极 -->
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center" Margin="15">
                                     <TextBlock Text="B电极" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
                                     <Border BorderBrush="Black" BorderThickness="1" Width="90" Height="210" Margin="5">
@@ -147,7 +153,6 @@
                                     <TextBlock Text="{Binding TextBlockValueB}" HorizontalAlignment="Center" FontSize="14" FontWeight="Bold"/>
                                 </StackPanel>
 
-                                <!-- C电极 -->
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center" Margin="15">
                                     <TextBlock Text="C电极" HorizontalAlignment="Center" FontWeight="Bold" Margin="0,0,0,5"/>
                                     <Border BorderBrush="Black" BorderThickness="1" Width="90" Height="210" Margin="5">
@@ -176,7 +181,6 @@
                         </Grid>
                     </Border>
 
-                    <!-- 右侧柱状图区 -->
                     <Grid Grid.Column="2" Margin="10">
 
                         <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -186,7 +190,6 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <!-- A -->
                             <StackPanel Grid.Column="0" HorizontalAlignment="Center">
                                 <Button Content="当前有效值A" Height="40" Margin="5"/>
                                 <Button Content="最大有效值A" Height="40" Margin="5"/>
@@ -195,7 +198,6 @@
                                 </Border>
                             </StackPanel>
 
-                            <!-- B -->
                             <StackPanel Grid.Column="1" HorizontalAlignment="Center">
                                 <Button Content="当前有效值B" Height="40" Margin="5"/>
                                 <Button Content="最大有效值B" Height="40" Margin="5"/>
@@ -204,7 +206,6 @@
                                 </Border>
                             </StackPanel>
 
-                            <!-- C -->
                             <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                                 <Button Content="当前有效值C" Height="40" Margin="5"/>
                                 <Button Content="最大有效值C" Height="40" Margin="5"/>

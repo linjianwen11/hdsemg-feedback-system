@@ -1,4 +1,4 @@
-using EMGFeedbackSystem.Models;
+﻿using EMGFeedbackSystem.Models;
 using EMGFeedbackSystem.Services;
 using EMGFeedbackSystem.Utils;
 using System.Windows.Media.Imaging;
@@ -106,7 +106,7 @@ namespace EMGFeedbackSystem.ViewModels
         {
             var electrodeData = new ElectrodeData();
 
-            // 64通道分配：A电极22个通道，B电极21个通道，C电极21个通道
+            // 64閫氶亾鍒嗛厤锛欰鐢垫瀬22涓€氶亾锛孊鐢垫瀬21涓€氶亾锛孋鐢垫瀬21涓€氶亾
             int[] channelsA = Enumerable.Range(0, 22).ToArray();
             int[] channelsB = Enumerable.Range(22, 21).ToArray();
             int[] channelsC = Enumerable.Range(43, 21).ToArray();
@@ -141,7 +141,7 @@ namespace EMGFeedbackSystem.ViewModels
         {
             double maxLimit = UpperLimit > 0 ? UpperLimit : 1.0;
 
-            // A电极：通道1-21，索引0-20，共21个通道，排列成7x3网格（7行3列）
+            // A鐢垫瀬锛氶€氶亾1-21锛岀储寮?-20锛屽叡21涓€氶亾锛屾帓鍒楁垚7x3缃戞牸锛?琛?鍒楋級
             double[,,] dataA = new double[7, 3, 1];
             double sumA = 0;
             for (int i = 0; i < 21 && i < data.AbsMeanValues.Length; i++)
@@ -159,7 +159,7 @@ namespace EMGFeedbackSystem.ViewModels
             ProgressBarColorA = new SolidColorBrush(Heatmap.ValueToColor(avgA));
             TextBlockValueA = (avgA * maxLimit).ToString("0.##");
 
-            // B电极：通道22-42，索引21-41，共21个通道，排列成7x3网格
+            // B鐢垫瀬锛氶€氶亾22-42锛岀储寮?1-41锛屽叡21涓€氶亾锛屾帓鍒楁垚7x3缃戞牸
             double[,,] dataB = new double[7, 3, 1];
             double sumB = 0;
             for (int i = 0; i < 21 && (21 + i) < data.AbsMeanValues.Length; i++)
@@ -177,7 +177,7 @@ namespace EMGFeedbackSystem.ViewModels
             ProgressBarColorB = new SolidColorBrush(Heatmap.ValueToColor(avgB));
             TextBlockValueB = (avgB * maxLimit).ToString("0.##");
 
-            // C电极：通道43-63，索引42-62，共21个通道，排列成7x3网格
+            // C鐢垫瀬锛氶€氶亾43-63锛岀储寮?2-62锛屽叡21涓€氶亾锛屾帓鍒楁垚7x3缃戞牸
             double[,,] dataC = new double[7, 3, 1];
             double sumC = 0;
             for (int i = 0; i < 21 && (42 + i) < data.AbsMeanValues.Length; i++)
@@ -195,7 +195,7 @@ namespace EMGFeedbackSystem.ViewModels
             ProgressBarColorC = new SolidColorBrush(Heatmap.ValueToColor(avgC));
             TextBlockValueC = (avgC * maxLimit).ToString("0.##");
 
-            // 同时更新右侧区域热力图（使用3x7网格保持原有布局）
+            // 鍚屾椂鏇存柊鍙充晶鍖哄煙鐑姏鍥撅紙浣跨敤3x7缃戞牸淇濇寔鍘熸湁甯冨眬锛?
             double[,] rightDataA = new double[3, 7];
             for (int i = 0; i < 21 && i < data.AbsMeanValues.Length; i++)
             {
@@ -263,7 +263,7 @@ namespace EMGFeedbackSystem.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"连接失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"操作失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -276,7 +276,7 @@ namespace EMGFeedbackSystem.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"启动采集失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"操作失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -289,7 +289,7 @@ namespace EMGFeedbackSystem.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"停止采集失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"操作失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -328,11 +328,11 @@ namespace EMGFeedbackSystem.ViewModels
                 UpdateLegSideByPosition();
                 UpdateComparisonMarkers();
                 
-                MessageBox.Show("受试者信息保存成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("操作成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"保存失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"操作失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -360,11 +360,11 @@ namespace EMGFeedbackSystem.ViewModels
                     UpdateMaxValuesByLegPosition();
                     UpdateLegSideByPosition();
                     
-                    MessageBox.Show("受试者信息加载成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("操作成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    var result = MessageBox.Show("未找到匹配的受试者信息，是否创建新受试者？", "提示", 
+                    var result = MessageBox.Show("未找到匹配的受试者信息，是否创建新受试者？", "提示",
                         MessageBoxButton.YesNo, MessageBoxImage.Question);
                     
                     if (result == MessageBoxResult.Yes)
@@ -375,7 +375,7 @@ namespace EMGFeedbackSystem.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"加载失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"操作失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -779,7 +779,7 @@ namespace EMGFeedbackSystem.ViewModels
             set { _heatmapC = value; OnPropertyChanged(); }
         }
 
-        // 中间区域热力图属性
+        // 涓棿鍖哄煙鐑姏鍥惧睘鎬?
         private BitmapSource? _centerHeatmapA;
         public BitmapSource? CenterHeatmapA
         {
@@ -801,7 +801,7 @@ namespace EMGFeedbackSystem.ViewModels
             set { _centerHeatmapC = value; OnPropertyChanged(); }
         }
 
-        // 左右腿选择属性
+        // 宸﹀彸鑵块€夋嫨灞炴€?
         private bool _isLeftLegSelected = true;
         public bool IsLeftLegSelected
         {
@@ -850,7 +850,7 @@ namespace EMGFeedbackSystem.ViewModels
             }
         }
 
-        // 进度条和数值显示属性
+        // 杩涘害鏉″拰鏁板€兼樉绀哄睘鎬?
         private double _progressBarValueA;
         public double ProgressBarValueA
         {
@@ -935,7 +935,7 @@ namespace EMGFeedbackSystem.ViewModels
             set { _textBlockValueC = value; OnPropertyChanged(); }
         }
 
-        // 热力图变量选择（0=RMS, 1=峰峰值, 2=MAV）
+        // 鐑姏鍥惧彉閲忛€夋嫨锛?=RMS, 1=宄板嘲鍊? 2=MAV锛?
         private int _heatMapVariable = 0;
         public int HeatMapVariable
         {
@@ -1005,3 +1005,5 @@ namespace EMGFeedbackSystem.ViewModels
         public void Execute(object? parameter) => _execute();
     }
 }
+
+

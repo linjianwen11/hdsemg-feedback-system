@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "L7zt2infUuk=",
+  "dgSpecHash": "94PWw6lrO/k=",
   "success": true,
-  "projectFilePath": "D:\\肌电反馈仪\\interactive_feedback_device\\EMGFeedbackSystem.csproj",
+  "projectFilePath": "D:\\feddback-system-hdemg\\hdsemg-feedback-system\\EMGFeedbackSystem.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\28964\\.nuget\\packages\\microsoft.data.sqlite\\8.0.0\\microsoft.data.sqlite.8.0.0.nupkg.sha512",
     "C:\\Users\\28964\\.nuget\\packages\\microsoft.data.sqlite.core\\8.0.0\\microsoft.data.sqlite.core.8.0.0.nupkg.sha512",
