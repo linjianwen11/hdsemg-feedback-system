@@ -193,25 +193,49 @@
                             <StackPanel Grid.Column="0" HorizontalAlignment="Center">
                                 <Button Content="当前有效值A" Height="40" Margin="5"/>
                                 <Button Content="最大有效值A" Height="40" Margin="5"/>
-                                <Border BorderBrush="Black" BorderThickness="1" Width="80" Height="280" Margin="5">
-                                    <Image Source="{Binding HeatmapA}" Stretch="Uniform"/>
+                                <Border BorderBrush="Black" BorderThickness="1" Width="80" Height="280" Margin="5" Background="#F0F0F0">
+                                    <Grid>
+                                        <ProgressBar Value="{Binding BarValueA}"
+                                                     Maximum="1"
+                                                     Minimum="0"
+                                                     Orientation="Vertical"
+                                                     Foreground="{Binding ProgressBarColorA}"
+                                                     Background="#D0D0D0"/>
+                                    </Grid>
                                 </Border>
+                                <TextBlock Text="{Binding BarValueA, StringFormat={}{0:P1}}" HorizontalAlignment="Center" FontWeight="Bold"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" HorizontalAlignment="Center">
                                 <Button Content="当前有效值B" Height="40" Margin="5"/>
                                 <Button Content="最大有效值B" Height="40" Margin="5"/>
-                                <Border BorderBrush="Black" BorderThickness="1" Width="80" Height="280" Margin="5">
-                                    <Image Source="{Binding HeatmapB}" Stretch="Uniform"/>
+                                <Border BorderBrush="Black" BorderThickness="1" Width="80" Height="280" Margin="5" Background="#F0F0F0">
+                                    <Grid>
+                                        <ProgressBar Value="{Binding BarValueB}"
+                                                     Maximum="1"
+                                                     Minimum="0"
+                                                     Orientation="Vertical"
+                                                     Foreground="{Binding ProgressBarColorB}"
+                                                     Background="#D0D0D0"/>
+                                    </Grid>
                                 </Border>
+                                <TextBlock Text="{Binding BarValueB, StringFormat={}{0:P1}}" HorizontalAlignment="Center" FontWeight="Bold"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                                 <Button Content="当前有效值C" Height="40" Margin="5"/>
                                 <Button Content="最大有效值C" Height="40" Margin="5"/>
-                                <Border BorderBrush="Black" BorderThickness="1" Width="80" Height="280" Margin="5">
-                                    <Image Source="{Binding HeatmapC}" Stretch="Uniform"/>
+                                <Border BorderBrush="Black" BorderThickness="1" Width="80" Height="280" Margin="5" Background="#F0F0F0">
+                                    <Grid>
+                                        <ProgressBar Value="{Binding BarValueC}"
+                                                     Maximum="1"
+                                                     Minimum="0"
+                                                     Orientation="Vertical"
+                                                     Foreground="{Binding ProgressBarColorC}"
+                                                     Background="#D0D0D0"/>
+                                    </Grid>
                                 </Border>
+                                <TextBlock Text="{Binding BarValueC, StringFormat={}{0:P1}}" HorizontalAlignment="Center" FontWeight="Bold"/>
                             </StackPanel>
                         </Grid>
                     </Grid>

@@ -21,13 +21,31 @@ namespace EMGFeedbackSystem.ViewModels
         private const string RightLeg = "右腿";
         private const string HealthySide = "健侧";
         private const string AffectedSide = "患侧";
+        private const int GroupSize = 21;
+        private const int GroupALower = 0;
+        private const int GroupBLower = 21;
+        private const int GroupCLower = 42;
+        private const int StableFramesRequired = 4;
+        private const double MinDominantRatio = 0.34;
+        private const double MinDominanceGap = 0.02;
 
         private readonly TcpServerService _tcpService;
         private readonly DatabaseService _dbService;
         private readonly Dispatcher _dispatcher;
         private bool _isUpdatingLegSelection;
+        private ActiveGroup _activeGroup = ActiveGroup.Unknown;
+        private ActiveGroup _pendingGroup = ActiveGroup.Unknown;
+        private int _pendingFrames;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        private enum ActiveGroup
+        {
+            Unknown = 0,
+            A = 1,
+            B = 2,
+            C = 3
+        }
 
         public MainViewModel()
         {
@@ -82,6 +100,8 @@ namespace EMGFeedbackSystem.ViewModels
                 if (!isConnected)
                 {
                     IsCollecting = false;
+                    ResetClassificationState();
+                    ClearRealtimeDisplay();
                 }
             });
         }
@@ -104,16 +124,21 @@ namespace EMGFeedbackSystem.ViewModels
 
         private void ProcessEMGData(EMGData data)
         {
+            if (!IsCollecting)
+            {
+                return;
+            }
+
             var electrodeData = new ElectrodeData();
 
-            // 64閫氶亾鍒嗛厤锛欰鐢垫瀬22涓€氶亾锛孊鐢垫瀬21涓€氶亾锛孋鐢垫瀬21涓€氶亾
-            int[] channelsA = Enumerable.Range(0, 22).ToArray();
-            int[] channelsB = Enumerable.Range(22, 21).ToArray();
-            int[] channelsC = Enumerable.Range(43, 21).ToArray();
+            double rawA = AverageRange(data.AbsMeanValues, GroupALower, GroupSize);
+            double rawB = AverageRange(data.AbsMeanValues, GroupBLower, GroupSize);
+            double rawC = AverageRange(data.AbsMeanValues, GroupCLower, GroupSize);
+            ActiveGroup active = ResolveActiveGroup(rawA, rawB, rawC);
 
-            electrodeData.CurrentValueA = channelsA.Where(i => i < data.ChannelValues.Length).Average(i => data.ChannelValues[i]);
-            electrodeData.CurrentValueB = channelsB.Where(i => i < data.ChannelValues.Length).Average(i => data.ChannelValues[i]);
-            electrodeData.CurrentValueC = channelsC.Where(i => i < data.ChannelValues.Length).Average(i => data.ChannelValues[i]);
+            electrodeData.CurrentValueA = active == ActiveGroup.A ? rawA : 0;
+            electrodeData.CurrentValueB = active == ActiveGroup.B ? rawB : 0;
+            electrodeData.CurrentValueC = active == ActiveGroup.C ? rawC : 0;
 
             CurrentValueA = electrodeData.CurrentValueA;
             CurrentValueB = electrodeData.CurrentValueB;
@@ -134,12 +159,15 @@ namespace EMGFeedbackSystem.ViewModels
 
             UpdateElectrodeColors(electrodeData);
             UpdateBarValues(electrodeData);
-            UpdateHeatmaps(data);
+            UpdateHeatmaps(data, active);
         }
 
-        private void UpdateHeatmaps(EMGData data)
+        private void UpdateHeatmaps(EMGData data, ActiveGroup active)
         {
             double maxLimit = UpperLimit > 0 ? UpperLimit : 1.0;
+            bool showA = active == ActiveGroup.A;
+            bool showB = active == ActiveGroup.B;
+            bool showC = active == ActiveGroup.C;
 
             // A鐢垫瀬锛氶€氶亾1-21锛岀储寮?-20锛屽叡21涓€氶亾锛屾帓鍒楁垚7x3缃戞牸锛?琛?鍒楋級
             double[,,] dataA = new double[7, 3, 1];
@@ -148,7 +176,7 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 int row = i % 7;  // 0-6
                 int col = i / 7;  // 0-2
-                double value = Math.Min(data.AbsMeanValues[i] / maxLimit, 1.0);
+                double value = showA ? NormalizeValue(data.AbsMeanValues[i], maxLimit) : 0;
                 dataA[row, col, 0] = value;
                 sumA += value;
             }
@@ -166,7 +194,7 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 int row = i % 7;  // 0-6
                 int col = i / 7;  // 0-2
-                double value = Math.Min(data.AbsMeanValues[21 + i] / maxLimit, 1.0);
+                double value = showB ? NormalizeValue(data.AbsMeanValues[21 + i], maxLimit) : 0;
                 dataB[row, col, 0] = value;
                 sumB += value;
             }
@@ -184,7 +212,7 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 int row = i % 7;  // 0-6
                 int col = i / 7;  // 0-2
-                double value = Math.Min(data.AbsMeanValues[42 + i] / maxLimit, 1.0);
+                double value = showC ? NormalizeValue(data.AbsMeanValues[42 + i], maxLimit) : 0;
                 dataC[row, col, 0] = value;
                 sumC += value;
             }
@@ -201,7 +229,7 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 int row = i / 7;
                 int col = i % 7;
-                rightDataA[row, col] = Math.Min(data.AbsMeanValues[i] / maxLimit, 1.0);
+                rightDataA[row, col] = showA ? NormalizeValue(data.AbsMeanValues[i], maxLimit) : 0;
             }
             HeatmapA = Heatmap.GenerateHeatmapBitmap(rightDataA);
 
@@ -210,7 +238,7 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 int row = i / 7;
                 int col = i % 7;
-                rightDataB[row, col] = Math.Min(data.AbsMeanValues[21 + i] / maxLimit, 1.0);
+                rightDataB[row, col] = showB ? NormalizeValue(data.AbsMeanValues[21 + i], maxLimit) : 0;
             }
             HeatmapB = Heatmap.GenerateHeatmapBitmap(rightDataB);
 
@@ -219,9 +247,217 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 int row = i / 7;
                 int col = i % 7;
-                rightDataC[row, col] = Math.Min(data.AbsMeanValues[42 + i] / maxLimit, 1.0);
+                rightDataC[row, col] = showC ? NormalizeValue(data.AbsMeanValues[42 + i], maxLimit) : 0;
             }
             HeatmapC = Heatmap.GenerateHeatmapBitmap(rightDataC);
+        }
+
+        private static double AverageRange(double[] values, int start, int count)
+        {
+            if (values == null || values.Length == 0 || start >= values.Length)
+            {
+                return 0;
+            }
+
+            int end = Math.Min(values.Length, start + count);
+            double sum = 0;
+            int n = 0;
+            for (int i = start; i < end; i++)
+            {
+                double v = values[i];
+                if (double.IsNaN(v) || double.IsInfinity(v))
+                {
+                    continue;
+                }
+
+                if (v < 0)
+                {
+                    v = -v;
+                }
+
+                sum += v;
+                n++;
+            }
+
+            return n > 0 ? sum / n : 0;
+        }
+
+        private static double NormalizeValue(double value, double maxLimit)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return 0;
+            }
+
+            if (maxLimit <= 0)
+            {
+                maxLimit = 1.0;
+            }
+
+            if (value < 0)
+            {
+                value = -value;
+            }
+
+            double normalized = value / maxLimit;
+            if (normalized < 0) return 0;
+            if (normalized > 1) return 1;
+            return normalized;
+        }
+
+        private ActiveGroup ResolveActiveGroup(double rawA, double rawB, double rawC)
+        {
+            ActiveGroup candidate = ClassifyCandidate(rawA, rawB, rawC);
+            if (candidate == ActiveGroup.Unknown)
+            {
+                // Fallback: ensure one group is visible when signal exists.
+                if (_activeGroup == ActiveGroup.Unknown)
+                {
+                    return StrongestGroup(rawA, rawB, rawC);
+                }
+                return _activeGroup;
+            }
+
+            if (_activeGroup == ActiveGroup.Unknown)
+            {
+                if (_pendingGroup == candidate)
+                {
+                    _pendingFrames++;
+                }
+                else
+                {
+                    _pendingGroup = candidate;
+                    _pendingFrames = 1;
+                }
+
+                if (_pendingFrames >= StableFramesRequired)
+                {
+                    _activeGroup = candidate;
+                    _pendingGroup = ActiveGroup.Unknown;
+                    _pendingFrames = 0;
+                }
+
+                return _activeGroup;
+            }
+
+            if (candidate == _activeGroup)
+            {
+                _pendingGroup = ActiveGroup.Unknown;
+                _pendingFrames = 0;
+                return _activeGroup;
+            }
+
+            if (_pendingGroup == candidate)
+            {
+                _pendingFrames++;
+            }
+            else
+            {
+                _pendingGroup = candidate;
+                _pendingFrames = 1;
+            }
+
+            if (_pendingFrames >= StableFramesRequired)
+            {
+                _activeGroup = candidate;
+                _pendingGroup = ActiveGroup.Unknown;
+                _pendingFrames = 0;
+            }
+
+            return _activeGroup;
+        }
+
+        private static ActiveGroup ClassifyCandidate(double a, double b, double c)
+        {
+            a = Math.Max(0, a);
+            b = Math.Max(0, b);
+            c = Math.Max(0, c);
+
+            double total = a + b + c;
+            if (total <= 1e-9)
+            {
+                return ActiveGroup.Unknown;
+            }
+
+            double ra = a / total;
+            double rb = b / total;
+            double rc = c / total;
+
+            double best = ra;
+            double second = Math.Max(rb, rc);
+            ActiveGroup group = ActiveGroup.A;
+
+            if (rb > best)
+            {
+                second = Math.Max(best, rc);
+                best = rb;
+                group = ActiveGroup.B;
+            }
+
+            if (rc > best)
+            {
+                second = Math.Max(best, rb);
+                best = rc;
+                group = ActiveGroup.C;
+            }
+
+            if (best < MinDominantRatio)
+            {
+                return ActiveGroup.Unknown;
+            }
+
+            if ((best - second) < MinDominanceGap)
+            {
+                return ActiveGroup.Unknown;
+            }
+
+            return group;
+        }
+
+        private static ActiveGroup StrongestGroup(double a, double b, double c)
+        {
+            a = Math.Max(0, a);
+            b = Math.Max(0, b);
+            c = Math.Max(0, c);
+
+            if (a <= 1e-9 && b <= 1e-9 && c <= 1e-9)
+            {
+                return ActiveGroup.Unknown;
+            }
+
+            if (a >= b && a >= c) return ActiveGroup.A;
+            if (b >= a && b >= c) return ActiveGroup.B;
+            return ActiveGroup.C;
+        }
+
+        private void ResetClassificationState()
+        {
+            _activeGroup = ActiveGroup.Unknown;
+            _pendingGroup = ActiveGroup.Unknown;
+            _pendingFrames = 0;
+        }
+
+        private void ClearRealtimeDisplay()
+        {
+            CurrentValueA = 0;
+            CurrentValueB = 0;
+            CurrentValueC = 0;
+            BarValueA = 0;
+            BarValueB = 0;
+            BarValueC = 0;
+            ProgressBarValueA = 0;
+            ProgressBarValueB = 0;
+            ProgressBarValueC = 0;
+            TextBlockValueA = "0";
+            TextBlockValueB = "0";
+            TextBlockValueC = "0";
+            ElectrodeAColor = Brushes.Gray;
+            ElectrodeBColor = Brushes.Gray;
+            ElectrodeCColor = Brushes.Gray;
+            ProgressBarColorA = Brushes.Gray;
+            ProgressBarColorB = Brushes.Gray;
+            ProgressBarColorC = Brushes.Gray;
+            UpdateHeatmaps(new EMGData(), ActiveGroup.Unknown);
         }
 
         private void UpdateElectrodeColors(ElectrodeData data)
@@ -271,6 +507,8 @@ namespace EMGFeedbackSystem.ViewModels
         {
             try
             {
+                ResetClassificationState();
+                ClearRealtimeDisplay();
                 await _tcpService.SendStartCollectionAsync();
                 IsCollecting = true;
             }
@@ -286,6 +524,8 @@ namespace EMGFeedbackSystem.ViewModels
             {
                 await _tcpService.SendStopCollectionAsync();
                 IsCollecting = false;
+                ResetClassificationState();
+                ClearRealtimeDisplay();
             }
             catch (Exception ex)
             {
